@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="kn">
+<head>
+<meta charset="UTF-8">
+<title>Resonex Farmer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 10px;
+  height: 700px;
+  background: url("Banner.jpg") no-repeat center / cover;
+}
+
+/* ===== HEADING ===== */
+h2 {
+  margin: 12px auto 16px auto;   /* center horizontally */
+  text-align: center;
+  font-size: 24px;
+  color: #fff;
+  text-shadow: 3px 3px 8px black;
+  background: rgba(255, 0, 0, 0.75);
+  padding: 10px 14px;
+  border-radius: 8px;
+  width: fit-content;            /* auto-size to text */
+  max-width: 90%;
+}
+
+/* ===== FORM ROW ===== */
+.form-row {
+  display: flex;
+  align-items: center;           /* vertical alignment */
+  justify-content: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* LABEL */
+.form-row label {
+  flex: 0 0 30%;
+  font-weight: bold;
+  color: blue;
+  font-size: 22px;
+  text-align: right;             /* clean column look */
+}
+
+/* INPUT */
+.form-row input {
+  flex: 1;
+  max-width: 40%;
+  padding: 10px 12px;
+  font-size: 20px;
+  font-weight: bold;
+  box-sizing: border-box;
+}
+
+/* BUTTON */
+button {
+  width: 20%;
+  margin: 16px auto;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: bold;
+  background: #0a7a6a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  display: block;
+}
+
+/* CANVAS */
+canvas {
+  width: 100%;
+  margin-top: 16px;
+  display: none;
+  border: 3px solid #ccc;
+}
+
+/* ===== MOBILE OPTIMIZATION ===== */
+@media (max-width: 600px) {
+
+  h2 {
+    font-size: 20px;
+    padding: 8px 12px;
+  }
+
+  .form-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .form-row label {
+    text-align: left;
+    font-size: 18px;
+  }
+
+  .form-row input {
+    max-width: 100%;
+    font-size: 18px;
+  }
+
+  button {
+    width: 100%;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<h2>TIRRACTO FARMER</h2>
+
+<div class="form-row">
+  <label>ರೈತರ ಹೆಸರು</label>
+  <input id="name">
+</div>
+
+<div class="form-row">
+  <label>ಮೊಬೈಲ್ ಸಂಖ್ಯೆ</label>
+  <input id="mobile" inputmode="numeric" maxlength="10">
+</div>
+
+<div class="form-row">
+  <label>ಗ್ರಾಮ</label>
+  <input id="village">
+</div>
+
+<div class="form-row">
+  <label>ಜಿಲ್ಲೆ</label>
+  <input id="district">
+</div>
+
+<div class="form-row">
+  <label>ಫೋಟೋ</label>
+  <input type="file" id="photo" accept="image/*">
+</div>
+
+<button onclick="generate()">Preview</button>
+
+<canvas id="canvas"></canvas>
+
+<button onclick="download()" id="downloadBtn" style="display:none">Download</button>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+const banner = new Image();
+banner.src = "BG.png";
+
+const photoBox = { x: 360, y: 170, w: 520, h: 420, r: 30 };
+
+document.getElementById("mobile").addEventListener("input", e => {
+  e.target.value = e.target.value.replace(/\D/g, "");
+});
+
+function roundedRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+async function generate() {
+
+  const name = document.getElementById("name").value.toUpperCase();
+  const mobile = document.getElementById("mobile").value;
+  const village = document.getElementById("village").value.toUpperCase();
+  const district = document.getElementById("district").value.toUpperCase();
+  const file = document.getElementById("photo").files[0];
+
+  if (mobile.length !== 10) {
+    alert("ದಯವಿಟ್ಟು 10 ಅಂಕಿಯ ಮೊಬೈಲ್ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ");
+    return;
+  }
+  if (!file) {
+    alert("ದಯವಿಟ್ಟು ಫೋಟೋ ಆಯ್ಕೆ ಮಾಡಿ");
+    return;
+  }
+
+  const farmerImg = new Image();
+  farmerImg.src = URL.createObjectURL(file);
+
+  farmerImg.onload = async () => {
+
+    canvas.width = banner.width;
+    canvas.height = banner.height;
+    ctx.drawImage(banner, 0, 0);
+
+    /* SHADOW CARD */
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.35)";
+    ctx.shadowBlur = 30;
+    ctx.shadowOffsetY = 12;
+    roundedRect(photoBox.x, photoBox.y, photoBox.w, photoBox.h, photoBox.r);
+    ctx.fillStyle = "#fff";
+    ctx.fill();
+    ctx.restore();
+
+    /* CLIP PHOTO */
+    ctx.save();
+    roundedRect(photoBox.x, photoBox.y, photoBox.w, photoBox.h, photoBox.r);
+    ctx.clip();
+
+    let drawX = farmerImg.width / 2;
+    let drawY = farmerImg.height * 0.35; // safe portrait focus
+
+    if ('FaceDetector' in window) {
+      try {
+        const detector = new FaceDetector({ fastMode: true });
+        const faces = await detector.detect(farmerImg);
+        if (faces.length > 0) {
+          const box = faces[0].boundingBox;
+          drawX = box.x + box.width / 2;
+          drawY = box.y + box.height / 2;
+        }
+      } catch {}
+    }
+
+    const scale = Math.max(
+      photoBox.w / farmerImg.width,
+      photoBox.h / farmerImg.height
+    );
+
+    ctx.drawImage(
+      farmerImg,
+      photoBox.x + photoBox.w / 2 - drawX * scale,
+      photoBox.y + photoBox.h / 2 - drawY * scale,
+      farmerImg.width * scale,
+      farmerImg.height * scale
+    );
+
+    ctx.restore();
+
+    /* WHITE BORDER */
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = "#fff";
+    roundedRect(photoBox.x, photoBox.y, photoBox.w, photoBox.h, photoBox.r);
+    ctx.stroke();
+
+    /* FARMER DETAILS */
+    const dx = 950;
+    let dy = 200;
+
+    ctx.fillStyle = "rgba(0,0,0,0.4)";
+    ctx.fillRect(dx - 30, dy - 55, 450, 260);
+
+    ctx.fillStyle = "#FFD700";
+    ctx.font = "bold 30px Arial";
+    ctx.fillText("ಕ್ರಾಂತಿಕಾರಿ ರೈತ", dx, dy);
+
+    ctx.font = "bold 20px Arial";
+    ctx.fillStyle = "#ffffff";
+
+    dy += 50;
+    ctx.fillText(`ರೈತ ಹೆಸರು :- ${name}`, dx, dy);
+    dy += 40;
+    ctx.fillText(`ಮೊಬೈಲ್ :- ${mobile}`, dx, dy);
+    dy += 40;
+    ctx.fillText(`ಗ್ರಾಮ :- ${village}`, dx, dy);
+    dy += 40;
+    ctx.fillText(`ಜಿಲ್ಲೆ :- ${district}`, dx, dy);
+
+    /* DATE */
+    ctx.font = "bold 22px Arial";
+    ctx.fillText(
+      new Date().toLocaleDateString("en-GB"),
+      canvas.width - 180,
+      canvas.height - 27
+    );
+
+    canvas.style.display = "block";
+    downloadBtn.style.display = "block";
+  };
+}
+
+function download() {
+  canvas.toBlob(blob => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${document.getElementById("name").value}_RESONEX.png`;
+    a.click();
+  });
+}
+</script>
+
+</body>
+</html>
